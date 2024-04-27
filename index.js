@@ -1,20 +1,36 @@
 import { scrapeCars } from "./scrape-fns.js";
-import { getNewCars } from "./db-fns.js";
+import { getNewCars, storeNewCars } from "./db-fns.js";
+import { sendEmail } from "./send-fns.js";
 
 async function main() {
+    // await sendEmail([]);
+    // return;
     const baseUrl = "https://www.facebook.com/marketplace/montreal/search?";
-    const minPrice = 2000;
-    const maxPrice = 10000;
-    const minMileage = 40000;
-    const maxMileage = 300000;
-    const minYear = 2010;
-    const maxYear = 2015;
-    const transmissionType = "automatic";
-    const make = "Toyota";
-    const model = "Corolla";
+    const searchParams = {
+        minPrice: 2000,
+        maxPrice: 10000,
+        minMileage: 40000,
+        maxMileage: 300000,
+        minYear: 2010,
+        maxYear: 2015,
+        transmissionType: "automatic",
+        make: "Toyota",
+        model: "Corolla",
+        mostRecent: false,
+    };
+
     // optional parameter &sortBy=creation_time_descend,
     // not used because it stops following the query
-    const url = `${baseUrl}minPrice=${minPrice}&maxPrice=${maxPrice}&maxMileage=${maxMileage}&maxYear=${maxYear}&minMileage=${minMileage}&minYear=${minYear}&transmissionType=${transmissionType}&query=${make}${model}&exact=false`;
+    const url = `${baseUrl}minPrice=${searchParams.minPrice}&maxPrice=${
+        searchParams.maxPrice
+    }&maxMileage=${searchParams.maxMileage}&maxYear=${
+        searchParams.maxYear
+    }&minMileage=${searchParams.minMileage}&minYear=${
+        searchParams.minYear
+    }&transmissionType=${searchParams.transmissionType}${
+        searchParams.mostRecent ? "&sortBy=creation_time_descend" : ""
+    }&query=${searchParams.make}${searchParams.model}&exact=false`;
+    console.log(url);
 
     const headers = {
         accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -34,17 +50,27 @@ async function main() {
     }
 
     // Get new cars
-    let newCars;
-    newCars = await getNewCars(cars);
+    let newCars = await getNewCars(cars);
 
-    // Check new cars
-    console.log(newCars);
+    // Check new cars, may not be necessary
+    if (newCars.length === 0) {
+        console.log("No new cars to add.");
+        return;
+    }
+    // newCars = checkNewCars(searchParams, newCars);
 
     // Add new cars to DB
+    let { isSuccess } = await storeNewCars(newCars);
+    if (!isSuccess) {
+        console.log("Something went wrong while storing new cars in DB.");
+        return;
+    }
 
-    // Send message regarding new cars
+    // Send message with new cars
+    isSuccess = await sendEmail(newCars);
+    if (!isSuccess) console.log("Unable to send email to the user.");
 
-    // fs.writeFileSync("./test.html", result);
+    console.log("Process complete!");
 }
 
 main();

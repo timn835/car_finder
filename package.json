@@ -12,6 +12,7 @@
     "license": "ISC",
     "dependencies": {
         "@aws-sdk/client-dynamodb": "^3.564.0",
+        "@aws-sdk/client-ses": "^3.564.0",
         "@aws-sdk/credential-providers": "^3.564.0",
         "axios": "^1.6.8",
         "cheerio": "1.0.0-rc.12",
