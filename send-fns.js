@@ -11,25 +11,22 @@ async function sendEmail(cars) {
         Destinations: ["timour.nesterov@gmail.com"], // Set the destination email address
         FromArn: "",
         RawMessage: {
-            Data: `From: timour.nesterov@gmail.com\nTo: timour.nesterov@gmail.com\nSubject: Test email (no attachment)\nMIME-Version: 1.0\nContent-type: text/plain\n\n
-            We have found ${cars.length} relevant listing${
+            Data: `From: timour.nesterov@gmail.com\nTo: timour.nesterov@gmail.com\nSubject: We have found ${
+                cars.length
+            } relevant listing${
                 cars.length > 1 ? "s" : ""
-            }.
+            }.\nMIME-Version: 1.0\nContent-type: text/plain\n\n
             ${cars
                 .map(
-                    (car) => `
-            ==========================================
-            Title: ${car.title}
+                    (car) => `Title: ${car.title}
             Price: ${car.priceFormatted}
             Location: ${car.locationDisplay}
             Mileage: ${car.mileage}
             Seller: ${car.seller}
             Link: ${car.url}
-            ==========================================
-            `
+            ==========================================`
                 )
-                .join("")}
-            `,
+                .join("")}`,
         },
         ReturnPathArn: "",
         Source: "timour.nesterov@gmail.com", // Set the source email address

@@ -16,11 +16,9 @@ async function main() {
         transmissionType: "automatic",
         make: "Toyota",
         model: "Corolla",
-        mostRecent: false,
+        mostRecent: true,
     };
 
-    // optional parameter &sortBy=creation_time_descend,
-    // not used because it stops following the query
     const url = `${baseUrl}minPrice=${searchParams.minPrice}&maxPrice=${
         searchParams.maxPrice
     }&maxMileage=${searchParams.maxMileage}&maxYear=${
@@ -50,17 +48,17 @@ async function main() {
     }
 
     // Get new cars
-    let newCars = await getNewCars(cars);
+    let { data: newCars, isSuccess } = await getNewCars(cars);
 
     // Check new cars, may not be necessary
+    // newCars = checkNewCars(searchParams, newCars);
     if (newCars.length === 0) {
         console.log("No new cars to add.");
         return;
     }
-    // newCars = checkNewCars(searchParams, newCars);
 
     // Add new cars to DB
-    let { isSuccess } = await storeNewCars(newCars);
+    isSuccess = await storeNewCars(newCars);
     if (!isSuccess) {
         console.log("Something went wrong while storing new cars in DB.");
         return;

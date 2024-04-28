@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 import {
     DynamoDBClient,
-    GetItemCommand,
+    BatchGetItemCommand,
+    // GetItemCommand,
     BatchWriteItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { fromEnv } from "@aws-sdk/credential-providers";
@@ -13,31 +14,33 @@ const client = new DynamoDBClient({
 });
 
 async function getNewCars(cars) {
-    const newCars = [];
-    let params;
     let command;
-    for (let car of cars) {
-        params = {
-            TableName: "egor_fb_cars",
-            Key: {
-                id: { S: car.id },
+    const input = {
+        RequestItems: {
+            egor_fb_cars: {
+                Keys: cars.map((car) => ({ id: { S: car.id } })),
             },
+        },
+    };
+    try {
+        command = new BatchGetItemCommand(input);
+        const response = await client.send(command);
+        const existingIds = response.Responses.egor_fb_cars.map(
+            (dbCar) => dbCar?.id?.S
+        );
+        return {
+            data: cars.filter((car) => !existingIds.includes(car.id)),
+            isSuccess: true,
         };
-        command = new GetItemCommand(params);
-        try {
-            const { Item } = await client.send(command);
-            if (!Item) newCars.push(car);
-        } catch (error) {
-            console.error(error);
-        }
+    } catch (error) {
+        console.error(error);
+        return { data: undefined, isSuccess: false };
     }
-    return newCars;
 }
 
 async function storeNewCars(cars) {
-    let isSuccess = true;
     if (cars.length === 0) {
-        return { isSuccess };
+        return true;
     }
     const dynamoItems = cars.map((car) =>
         Object.fromEntries(
@@ -63,12 +66,12 @@ async function storeNewCars(cars) {
     try {
         const command = new BatchWriteItemCommand(params);
         await client.send(command);
+        client.destroy();
+        return true;
     } catch (error) {
         console.log(error.message);
-        isSuccess = false;
-    } finally {
-        client.destroy(); // destroys DynamoDBClient
-        return { isSuccess };
+        client.destroy();
+        return false;
     }
 }
 
