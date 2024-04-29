@@ -24,7 +24,8 @@ async function sendEmail(cars) {
             Mileage: ${car.mileage}
             Seller: ${car.seller}
             Link: ${car.url}
-            ==========================================`
+            ==========================================
+            `
                 )
                 .join("")}`,
         },

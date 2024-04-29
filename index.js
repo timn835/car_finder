@@ -1,21 +1,20 @@
 import { scrapeCars } from "./scrape-fns.js";
 import { getNewCars, storeNewCars } from "./db-fns.js";
 import { sendEmail } from "./send-fns.js";
+import { checkNewCars } from "./utils.js";
 
-async function main() {
-    // await sendEmail([]);
-    // return;
+async function handler() {
     const baseUrl = "https://www.facebook.com/marketplace/montreal/search?";
     const searchParams = {
         minPrice: 2000,
-        maxPrice: 10000,
+        maxPrice: 15000,
         minMileage: 40000,
-        maxMileage: 300000,
-        minYear: 2010,
-        maxYear: 2015,
+        maxMileage: 200000,
+        minYear: 2012,
+        maxYear: 2012,
         transmissionType: "automatic",
-        make: "Toyota",
-        model: "Corolla",
+        make: "Audi",
+        model: "a5",
         mostRecent: true,
     };
 
@@ -27,7 +26,7 @@ async function main() {
         searchParams.minYear
     }&transmissionType=${searchParams.transmissionType}${
         searchParams.mostRecent ? "&sortBy=creation_time_descend" : ""
-    }&query=${searchParams.make}${searchParams.model}&exact=false`;
+    }&query=${searchParams.make}%20${searchParams.model}&exact=false`;
     console.log(url);
 
     const headers = {
@@ -43,32 +42,38 @@ async function main() {
     };
     const { data: cars, errorMessage } = await scrapeCars(url, headers);
     if (errorMessage) {
-        console.log(errorMessage);
-        return;
+        return { isSuccess: false, message: errorMessage };
     }
-
     // Get new cars
     let { data: newCars, isSuccess } = await getNewCars(cars);
+    if (!isSuccess)
+        return { isSuccess: false, message: "Could not get new cars" };
 
-    // Check new cars, may not be necessary
-    // newCars = checkNewCars(searchParams, newCars);
+    // Check new cars
+    newCars = checkNewCars(searchParams, newCars);
     if (newCars.length === 0) {
-        console.log("No new cars to add.");
-        return;
+        return { isSuccess: true, message: "No new cars to add." };
     }
 
     // Add new cars to DB
     isSuccess = await storeNewCars(newCars);
     if (!isSuccess) {
-        console.log("Something went wrong while storing new cars in DB.");
-        return;
+        return {
+            isSuccess: false,
+            message: "Something went wrong while storing new cars in DB.",
+        };
     }
 
     // Send message with new cars
     isSuccess = await sendEmail(newCars);
-    if (!isSuccess) console.log("Unable to send email to the user.");
+    if (!isSuccess)
+        return {
+            isSuccess: false,
+            message: "Unable to send email to the user.",
+        };
 
-    console.log("Process complete!");
+    return { isSuccess: true, message: "Process completed successfully!" };
 }
 
-main();
+const { message } = await handler();
+console.log(message);

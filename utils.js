@@ -45,14 +45,19 @@ function getCarFromListing(listing) {
 }
 
 function checkNewCars(searchParams, newCars) {
-    const { minPrice, maxPrice, minMileage, maxMileage } = searchParams;
+    const { minPrice, maxPrice, minMileage, maxMileage, make, model } =
+        searchParams;
+
     return newCars.filter((car) => {
         const priceOk = car.price <= maxPrice && car.price >= minPrice;
-        const mileage = parseInt(car.subtitles[0]);
-        const mileageOk = isNaN(mileage)
+        const mileageNum = parseInt(car.mileage);
+        const mileageOk = isNaN(mileageNum)
             ? true
-            : mileage <= maxMileage && mileage >= minMileage;
-        return priceOk && mileageOk;
+            : mileageNum <= maxMileage / 1000 &&
+              mileageNum >= minMileage / 1000;
+        const makeOk = car.title.toLowerCase().includes(make.toLowerCase());
+        const modelOk = car.title.toLowerCase().includes(model.toLowerCase());
+        return priceOk && mileageOk && makeOk && modelOk;
     });
 }
 

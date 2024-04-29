@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import {
     DynamoDBClient,
     BatchGetItemCommand,
-    // GetItemCommand,
     BatchWriteItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { fromEnv } from "@aws-sdk/credential-providers";
