@@ -1,32 +1,28 @@
 import * as cheerio from "cheerio";
-import { extractKey, getCarFromListing } from "./utils.js";
+import { extractKey, getItemFromListing } from "./utils.js";
 import request from "request-promise";
 
-async function scrapeCars(url, headers) {
-    try {
-        const options = {
-            url,
-            headers,
-            transform: (body) => cheerio.load(body),
-        };
-        const $ = await request(options);
-        if (!$) return { errorMessage: "Unable to complete request" };
-        let listingsData;
-        for (let el of $("script[type='application/json'][data-sjs]")) {
-            if ($(el).text().includes("marketplace_search")) {
-                listingsData = extractKey("edges", JSON.parse($(el).text()));
-                break;
-            }
+async function scrapeItems(url, headers) {
+    const options = {
+        url,
+        headers,
+        transform: (body) => cheerio.load(body),
+    };
+    const $ = await request(options);
+
+    if (!$) throw new Error("Error executing scrapeCars function 1");
+    let listingsData;
+    for (let el of $("script[type='application/json'][data-sjs]")) {
+        if ($(el).text().includes("marketplace_search")) {
+            listingsData = extractKey("edges", JSON.parse($(el).text()));
+            break;
         }
-        if (!listingsData)
-            return { errorMessage: "No data listings were returned", $ };
-        const cars = listingsData.map((element) => {
-            return getCarFromListing(element.node.listing);
-        });
-        return { data: cars };
-    } catch (error) {
-        return { errorMessage: `Unable to complete request: ${error.message}` };
     }
+    if (!listingsData) throw new Error("Error executing scrapeCars function 2");
+    const items = listingsData.map((element) => {
+        return getItemFromListing(element.node.listing);
+    });
+    return items;
 }
 
-export { scrapeCars };
+export { scrapeItems };

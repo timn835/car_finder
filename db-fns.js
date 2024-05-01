@@ -1,10 +1,12 @@
 import dotenv from "dotenv";
 import {
     DynamoDBClient,
+    ScanCommand,
     BatchGetItemCommand,
     BatchWriteItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { fromEnv } from "@aws-sdk/credential-providers";
+import { ITEMS_TABLE, SEARCHES_TABLE } from "./constants.js";
 
 dotenv.config();
 const client = new DynamoDBClient({
@@ -12,52 +14,64 @@ const client = new DynamoDBClient({
     credentials: fromEnv(),
 });
 
-async function getNewCars(cars) {
-    let command;
-    const input = {
-        RequestItems: {
-            egor_fb_cars: {
-                Keys: cars.map((car) => ({ id: { S: car.id } })),
-            },
-        },
-    };
+async function fetchSearches() {
+    const command = new ScanCommand({ TableName: SEARCHES_TABLE });
     try {
-        command = new BatchGetItemCommand(input);
         const response = await client.send(command);
-        const existingIds = response.Responses.egor_fb_cars.map(
-            (dbCar) => dbCar?.id?.S
+        return response.Items.map((item) =>
+            Object.fromEntries(
+                Object.entries(item).map(([key, value]) => [
+                    key,
+                    `${Object.values(value)[0]}`,
+                ])
+            )
         );
-        return {
-            data: cars.filter((car) => !existingIds.includes(car.id)),
-            isSuccess: true,
-        };
     } catch (error) {
         console.error(error);
-        return { data: undefined, isSuccess: false };
+        return undefined;
     }
 }
 
-async function storeNewCars(cars) {
-    if (cars.length === 0) {
-        return true;
-    }
-    const dynamoItems = cars.map((car) =>
+async function getNewItems(items) {
+    const input = {
+        RequestItems: {
+            [ITEMS_TABLE]: {
+                Keys: items.map((item) => ({ id: { S: item.id } })),
+            },
+        },
+    };
+    const command = new BatchGetItemCommand(input);
+    const response = await client.send(command);
+    const existingIds = response.Responses[ITEMS_TABLE].map(
+        (dbItem) => dbItem?.id?.S
+    );
+    return items.filter((item) => !existingIds.includes(item.id));
+}
+
+async function storeNewItems(items) {
+    console.log("hello");
+    const dynamoItems = items.map((item) =>
         Object.fromEntries(
-            Object.entries(car).map(([key, value]) => [
+            Object.entries(item).map(([key, value]) => [
                 key,
-                typeof value === "number" ? { N: `${value}` } : { S: value },
+                typeof value === "number"
+                    ? { N: `${value}` }
+                    : typeof value === "string"
+                    ? { S: value }
+                    : Array.isArray(value)
+                    ? { L: value.map((attr) => ({ S: attr })) }
+                    : undefined,
             ])
         )
     );
-    console.log(`Storing ${dynamoItems.length} new cars.`);
     const params = {
         RequestItems: {
-            egor_fb_cars: dynamoItems.map((item) => ({
+            [ITEMS_TABLE]: dynamoItems.map((dynamoItem) => ({
                 PutRequest: {
                     Keys: {
-                        id: item.id,
+                        id: dynamoItem.id,
                     },
-                    Item: item,
+                    Item: dynamoItem,
                 },
             })),
         },
@@ -74,4 +88,4 @@ async function storeNewCars(cars) {
     }
 }
 
-export { getNewCars, storeNewCars };
+export { fetchSearches, getNewItems, storeNewItems };

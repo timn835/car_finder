@@ -6,24 +6,24 @@ const client = new SESClient({
     credentials: fromEnv(),
 });
 
-async function sendEmail(cars) {
+async function sendEmail(items) {
     const input = {
         Destinations: ["timour.nesterov@gmail.com"], // Set the destination email address
         FromArn: "",
         RawMessage: {
             Data: `From: timour.nesterov@gmail.com\nTo: timour.nesterov@gmail.com\nSubject: We have found ${
-                cars.length
+                items.length
             } relevant listing${
-                cars.length > 1 ? "s" : ""
+                items.length > 1 ? "s" : ""
             }.\nMIME-Version: 1.0\nContent-type: text/plain\n\n
-            ${cars
+            ${items
                 .map(
-                    (car) => `Title: ${car.title}
-            Price: ${car.priceFormatted}
-            Location: ${car.locationDisplay}
-            Mileage: ${car.mileage}
-            Seller: ${car.seller}
-            Link: ${car.url}
+                    (item) => `Title: ${item.title}
+            Price: ${item.priceFormatted}
+            Location: ${item.locationDisplay}
+            Subtitles: ${item.subtitles?.join(", ")}
+            Seller: ${item.seller}
+            Link: ${item.url}
             ==========================================
             `
                 )
@@ -35,11 +35,11 @@ async function sendEmail(cars) {
     };
     try {
         const command = new SendRawEmailCommand(input);
-        const response = await client.send(command);
-        console.log("Email sent:", response);
+        await client.send(command);
+        client.destroy();
         return true;
-    } catch (err) {
-        console.error("Error sending email:", err);
+    } catch (error) {
+        console.error(error.message);
         return false;
     }
 }

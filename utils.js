@@ -16,7 +16,7 @@ function extractKey(key, data) {
     return null;
 }
 
-function getCarFromListing(listing) {
+function getItemFromListing(listing) {
     let price = parseFloat(listing?.listing_price?.amount);
     if (isNaN(price)) price = undefined;
     let priceUSD = parseInt(
@@ -27,7 +27,7 @@ function getCarFromListing(listing) {
     return {
         id: listing?.id,
         created_at: Date.now(),
-        title: listing?.custom_title,
+        title: listing?.marketplace_listing_title || listing?.custom_title,
         url: listing?.id
             ? `https://www.facebook.com/marketplace/item/${listing.id}`
             : undefined,
@@ -39,26 +39,22 @@ function getCarFromListing(listing) {
             listing?.location?.reverse_geocode?.city_page?.display_name,
         city: listing?.location?.reverse_geocode?.city,
         state: listing?.location?.reverse_geocode?.state,
-        mileage: listing?.custom_sub_titles_with_rendering_flags[0]?.subtitle,
+        subtitles: listing?.custom_sub_titles_with_rendering_flags?.map(
+            (subObject) => subObject?.subtitle
+        ),
         seller: listing?.marketplace_listing_seller?.name,
     };
 }
 
-function checkNewCars(searchParams, newCars) {
-    const { minPrice, maxPrice, minMileage, maxMileage, make, model } =
-        searchParams;
-
+function checkNewItems(query, newCars) {
     return newCars.filter((car) => {
-        const priceOk = car.price <= maxPrice && car.price >= minPrice;
-        const mileageNum = parseInt(car.mileage);
-        const mileageOk = isNaN(mileageNum)
-            ? true
-            : mileageNum <= maxMileage / 1000 &&
-              mileageNum >= minMileage / 1000;
-        const makeOk = car.title.toLowerCase().includes(make.toLowerCase());
-        const modelOk = car.title.toLowerCase().includes(model.toLowerCase());
-        return priceOk && mileageOk && makeOk && modelOk;
+        const queryWords = query.split(" ");
+        for (let word of queryWords) {
+            if (!car.title.toLowerCase().includes(word.toLowerCase()))
+                return false;
+        }
+        return true;
     });
 }
 
-export { extractKey, getCarFromListing, checkNewCars };
+export { extractKey, getItemFromListing, checkNewItems };
