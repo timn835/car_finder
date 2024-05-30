@@ -16,9 +16,9 @@ async function handler() {
     if (searches === undefined)
         return { isSuccess: false, message: "Could not fetch searches" };
     const searchesInfo = searches.map((search) => {
-        let baseUrl = `https://www.facebook.com/marketplace/${
-            search?.city
-        }/search?query=${search?.query?.split(" ").join("%20")}`;
+        let baseUrl = `https://www.facebook.com/marketplace/${search?.city
+            ?.split(" ")
+            .join("%20")}/search?query=toyota%20corolla`;
         for (let [criteria, criteriaValue] of Object.entries(search)) {
             if (
                 criteria === "city" ||
@@ -49,11 +49,17 @@ async function handler() {
     if (items.length === 0)
         return { isSuccess: false, message: "No scraped results" };
     let newItems = await getNewItems(items);
+    if (newItems === undefined)
+        return { isSuccess: false, message: "Unable to determine new items" };
     if (newItems.length === 0)
         return { isSuccess: true, message: "No new items to add" };
 
     // Add new cars to DB
-    isSuccess = await storeNewItems(newItems);
+    for (let i = 0; i < Math.ceil(newItems.length / 25); i++) {
+        isSuccess = await storeNewItems(
+            newItems.slice(25 * i, Math.min(newItems.length, 25 * (i + 1)))
+        );
+    }
     if (!isSuccess)
         return { isSuccess: false, message: "Unable to store new items" };
 
@@ -61,6 +67,8 @@ async function handler() {
     isSuccess = await sendEmail(newItems);
     if (!isSuccess)
         return { isSuccess: false, message: "Unable to send email" };
+
+    // TODO: add clean up function to erase old items from db
 
     return {
         isSuccess: true,

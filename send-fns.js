@@ -8,10 +8,10 @@ const client = new SESClient({
 
 async function sendEmail(items) {
     const input = {
-        Destinations: ["timour.nesterov@gmail.com"], // Set the destination email address
+        Destinations: ["timn835@yahoo.ca"], // Set the destination email address
         FromArn: "",
         RawMessage: {
-            Data: `From: timour.nesterov@gmail.com\nTo: timour.nesterov@gmail.com\nSubject: We have found ${
+            Data: Buffer.from(`From: timn835@yahoo.ca\nTo: timn835@yahoo.ca\nSubject: We have found ${
                 items.length
             } relevant listing${
                 items.length > 1 ? "s" : ""
@@ -21,16 +21,20 @@ async function sendEmail(items) {
                     (item) => `Title: ${item.title}
             Price: ${item.priceFormatted}
             Location: ${item.locationDisplay}
-            Subtitles: ${item.subtitles?.join(", ")}
-            Seller: ${item.seller}
+            ${
+                item.subtitles?.length > 0
+                    ? `Subtitles: ${item.subtitles?.join(", ")}
+            `
+                    : ""
+            }Seller: ${item.seller}
             Link: ${item.url}
             ==========================================
             `
                 )
-                .join("")}`,
+                .join("")}`),
         },
         ReturnPathArn: "",
-        Source: "timour.nesterov@gmail.com", // Set the source email address
+        Source: "timn835@yahoo.ca", // Set the source email address
         SourceArn: "",
     };
     try {

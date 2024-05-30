@@ -12,5 +12,7 @@ const HEADERS = {
 
 const SEARCHES_TABLE = "egor_searches";
 const ITEMS_TABLE = "egor_fb_items";
+const BD_PROXY_URL =
+    "http://brd-customer-hl_9351363b-zone-res_proxy_1:yn6p4u59mwd0@brd.superproxy.io:22225";
 
-export { HEADERS, SEARCHES_TABLE, ITEMS_TABLE };
+export { HEADERS, SEARCHES_TABLE, ITEMS_TABLE, BD_PROXY_URL };

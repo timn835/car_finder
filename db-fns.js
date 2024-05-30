@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import {
     DynamoDBClient,
     ScanCommand,
-    BatchGetItemCommand,
     BatchWriteItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { fromEnv } from "@aws-sdk/credential-providers";
@@ -33,23 +32,23 @@ async function fetchSearches() {
 }
 
 async function getNewItems(items) {
-    const input = {
-        RequestItems: {
-            [ITEMS_TABLE]: {
-                Keys: items.map((item) => ({ id: { S: item.id } })),
-            },
-        },
-    };
-    const command = new BatchGetItemCommand(input);
-    const response = await client.send(command);
-    const existingIds = response.Responses[ITEMS_TABLE].map(
-        (dbItem) => dbItem?.id?.S
-    );
-    return items.filter((item) => !existingIds.includes(item.id));
+    const command = new ScanCommand({
+        TableName: ITEMS_TABLE,
+        AttributesToGet: ["id"],
+    });
+    try {
+        const response = await client.send(command);
+        // TODO: implement binary search here for optimization
+        const existingIds = response.Items.map((item) => item.id.S);
+        return items.filter((item) => !existingIds.includes(item.id));
+    } catch (error) {
+        console.error(error);
+        return undefined;
+    }
 }
 
 async function storeNewItems(items) {
-    console.log("hello");
+    if (items.length === 0) return true;
     const dynamoItems = items.map((item) =>
         Object.fromEntries(
             Object.entries(item).map(([key, value]) => [
@@ -79,11 +78,9 @@ async function storeNewItems(items) {
     try {
         const command = new BatchWriteItemCommand(params);
         await client.send(command);
-        client.destroy();
         return true;
     } catch (error) {
-        console.log(error.message);
-        client.destroy();
+        // console.log(error.message);
         return false;
     }
 }
