@@ -1,8 +1,14 @@
 import * as cheerio from "cheerio";
-import { extractKey, getItemFromListing } from "./utils.js";
+import { checkNewItems, extractKey, getItemFromListing } from "./utils.js";
 import request from "request-promise";
 import fs from "fs";
-import { BD_PROXY_URL } from "./constants.js";
+import { BD_PROXY_URL, HEADERS } from "./constants.js";
+
+async function scrape({ url, query, exact }) {
+    const items = await scrapeItems(url, HEADERS);
+    if (exact) return checkNewItems(query, items);
+    return items;
+}
 
 async function scrapeItems(url, headers) {
     const options = {
@@ -33,4 +39,4 @@ async function scrapeItems(url, headers) {
     return items;
 }
 
-export { scrapeItems };
+export { scrapeItems, scrape };
